@@ -31,6 +31,9 @@ def getRawData(sc):
 	print missing, total
 	return data
 
+def AddData(data):
+    pass
+
 def trainModel(sc, trainingData, testData):
 	# Train a RandomForest model.
 	#  Empty categoricalFeaturesInfo indicates all features are continuous.
@@ -84,6 +87,7 @@ def plot(sc):
 def main():
 	sc = SparkContext(appName="PythonRandomForestRegressionExample")
 	data = getRawData(sc)
+        return
 	
 	# Split the data into training and test sets (30% held out for testing)
 	(trainingData, testData) = data.randomSplit([0.7, 0.3])
