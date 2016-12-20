@@ -25,14 +25,11 @@ def lbfunc(line):
 		return None
 
 def getRawData(sc):
-	data = sc.textFile("data/new_processed_file.csv")
+	data = sc.textFile("data/augmented_file.csv")
 	header = data.first()
 	data = data.filter(lambda row: row!=header).map(lambda line: lbfunc(line)).filter(lambda x:x!=None)
 	print missing, total
 	return data
-
-def AddData(data):
-    pass
 
 def trainModel(sc, trainingData, testData):
 	# Train a RandomForest model.
@@ -87,8 +84,6 @@ def plot(sc):
 def main():
 	sc = SparkContext(appName="PythonRandomForestRegressionExample")
 	data = getRawData(sc)
-        return
-	
 	# Split the data into training and test sets (30% held out for testing)
 	(trainingData, testData) = data.randomSplit([0.7, 0.3])
 	model = trainModel(sc, trainingData, testData)

@@ -1,7 +1,7 @@
 import random
 
 
-K = 10
+K = 7
 mu = 0
 sigma = 0.1
 path_to_csv = 'data/new_processed_file.csv'
