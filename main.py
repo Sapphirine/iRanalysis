@@ -36,18 +36,19 @@ def getRawData(sc, repeat=3):
     header = data.first()
     data = data.filter(lambda row: row != header).map(lambda line: lbfunc(line)).filter(lambda x: x != None)
     final_data = data
+    
     for k in xrange(repeat):
         final_data = final_data.union(data)
     return final_data
 
 
-def trainModelRF(sc, trainingData, testData, LOGGER, numTrees=500):
+def trainModelRF(sc, trainingData, testData, LOGGER, numT=50):
     # Train a RandomForest model.
     #  Empty categoricalFeaturesInfo indicates all features are continuous.
     #  Note: Use larger numTrees in practice.
     #  Setting featureSubsetStrategy="auto" lets the algorithm choose.
     model = RandomForest.trainRegressor(trainingData, categoricalFeaturesInfo={5: 7},
-                                        numTrees=numTrees, featureSubsetStrategy="auto",
+                                        numTrees=numT, featureSubsetStrategy="auto",
                                         impurity='variance', maxDepth=20, maxBins=32)
 
     # Evaluate model on test instances and compute test error
@@ -65,11 +66,11 @@ def trainModelRF(sc, trainingData, testData, LOGGER, numTrees=500):
     return model
 
 
-def trainModelGBT(sc, trainingData, testData, LOGGER, iterations=100):
+def trainModelGBT(sc, trainingData, testData, LOGGER, itera=50):
     # Train a GradientBoostedTrees model.
     #  Notes: (a) Empty categoricalFeaturesInfo indicates all features are continuous.
     #         (b) Use more iterations in practice.
-    model = GradientBoostedTrees.trainRegressor(trainingData, categoricalFeaturesInfo={5: 7}, numIterations=iterations)
+    model = GradientBoostedTrees.trainRegressor(trainingData, categoricalFeaturesInfo={5: 7}, numIterations=itera)
 
     # Evaluate model on test instances and compute test error
     predictions = model.predict(testData.map(lambda x: x.features))
@@ -117,7 +118,7 @@ def plot(sc, model, LOGGER):
     writeS3(LOGGER, yarr)
 
 
-def main():
+if __name__ == '__main__':
 
     sc = SparkContext(appName="BigData")
     log4jLogger = sc._jvm.org.apache.log4j
@@ -139,6 +140,3 @@ def main():
     plot(sc, modelRF, LOGGER)
     plot(sc, modelGBT, LOGGER)
     writeS3(LOGGER, 'Done')
-
-if __name__ == '__main__':
-    main()
