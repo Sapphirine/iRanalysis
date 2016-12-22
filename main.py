@@ -30,26 +30,27 @@ def writeS3(LOGGER, msg):
 
 
 def getRawData(sc, repeat=3):
-    data = sc.textFile("s3n://bigdatap2ploans/new_processed_file.csv")
+    data = sc.textFile("s3n://bigdatap2ploans/augmented_file.csv").cache()
     # data = sc.textFile("data/augmented_file.csv")
     # data = sc.textFile("data/new_processed_file.csv")
     header = data.first()
     data = data.filter(lambda row: row != header).map(lambda line: lbfunc(line)).filter(lambda x: x != None)
-    final_data = data
-    
-    for k in xrange(repeat):
-        final_data = final_data.union(data)
-    return final_data
+    # final_data = data
+
+    # for k in xrange(repeat):
+    #     final_data = final_data.union(data)
+    # return final_data
+    return data
 
 
-def trainModelRF(sc, trainingData, testData, LOGGER, numT=50):
+def trainModelRF(sc, trainingData, testData, LOGGER, numT=500):
     # Train a RandomForest model.
     #  Empty categoricalFeaturesInfo indicates all features are continuous.
     #  Note: Use larger numTrees in practice.
     #  Setting featureSubsetStrategy="auto" lets the algorithm choose.
     model = RandomForest.trainRegressor(trainingData, categoricalFeaturesInfo={5: 7},
                                         numTrees=numT, featureSubsetStrategy="auto",
-                                        impurity='variance', maxDepth=20, maxBins=32)
+                                        impurity='variance', maxDepth=10, maxBins=32)
 
     # Evaluate model on test instances and compute test error
     predictions = model.predict(testData.map(lambda x: x.features))
@@ -66,7 +67,7 @@ def trainModelRF(sc, trainingData, testData, LOGGER, numT=50):
     return model
 
 
-def trainModelGBT(sc, trainingData, testData, LOGGER, itera=50):
+def trainModelGBT(sc, trainingData, testData, LOGGER, itera=500):
     # Train a GradientBoostedTrees model.
     #  Notes: (a) Empty categoricalFeaturesInfo indicates all features are continuous.
     #         (b) Use more iterations in practice.
