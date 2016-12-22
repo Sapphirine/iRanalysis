@@ -25,14 +25,23 @@ def lbfunc(line):
         return None
 
 
-def getRawData(sc):
-    data = sc.textFile("s3n://bigdatap2ploans/augmented_file.csv")
+def writeS3(LOGGER, msg):
+    LOGGER.info('StdOut: {}'.format(msg))
+
+
+def getRawData(sc, repeat=3):
+    data = sc.textFile("s3n://bigdatap2ploans/new_processed_file.csv")
+    # data = sc.textFile("data/augmented_file.csv")
+    # data = sc.textFile("data/new_processed_file.csv")
     header = data.first()
     data = data.filter(lambda row: row != header).map(lambda line: lbfunc(line)).filter(lambda x: x != None)
-    return data
+    final_data = data
+    for k in xrange(repeat):
+        final_data = final_data.union(data)
+    return final_data
 
 
-def trainModelRF(sc, trainingData, testData, numTrees=1000):
+def trainModelRF(sc, trainingData, testData, LOGGER, numTrees=500):
     # Train a RandomForest model.
     #  Empty categoricalFeaturesInfo indicates all features are continuous.
     #  Note: Use larger numTrees in practice.
@@ -46,16 +55,17 @@ def trainModelRF(sc, trainingData, testData, numTrees=1000):
     labelsAndPredictions = testData.map(lambda lp: lp.label).zip(predictions)
 
     testMSE = labelsAndPredictions.map(lambda (v, p): (v - p) * (v - p)).sum() / float(testData.count())
-    print('Test Mean Squared Error = ' + str(testMSE))
-    print('Learned regression forest model:')
-    print(model.toDebugString())
+    writeS3(LOGGER, 'Test Mean Squared Error = ' + str(testMSE))
+    writeS3(LOGGER, 'Learned regression forest model:')
+    writeS3(LOGGER, model.toDebugString())
 
     # Save and load model
-    model.save(sc, "s3n://bigdatap2ploans/myRandomForestRegressionModel1")
+    model.save(sc, "s3n://bigdatap2ploans/rf")
+    # model.save(sc, "model/rf")
     return model
 
 
-def trainModelGBT(sc, trainingData, testData, iterations=1000):
+def trainModelGBT(sc, trainingData, testData, LOGGER, iterations=100):
     # Train a GradientBoostedTrees model.
     #  Notes: (a) Empty categoricalFeaturesInfo indicates all features are continuous.
     #         (b) Use more iterations in practice.
@@ -65,16 +75,17 @@ def trainModelGBT(sc, trainingData, testData, iterations=1000):
     predictions = model.predict(testData.map(lambda x: x.features))
     labelsAndPredictions = testData.map(lambda lp: lp.label).zip(predictions)
     testMSE = labelsAndPredictions.map(lambda (v, p): (v - p) * (v - p)).sum() / float(testData.count())
-    print('Test Mean Squared Error = ' + str(testMSE))
-    print('Learned regression GBT model:')
-    print(model.toDebugString())
+    writeS3(LOGGER, 'Test Mean Squared Error = ' + str(testMSE))
+    writeS3(LOGGER, 'Learned regression GBT model:')
+    writeS3(LOGGER, model.toDebugString())
 
     # Save and load model
-    model.save(sc, "s3n://bigdatap2ploans/myGradientBoostingRegressionModel1")
+    model.save(sc, "s3n://bigdatap2ploans/gbt")
+    # model.save(sc, "model/gbt")
     return model
 
 
-def plot(sc, model):
+def plot(sc, model, LOGGER):
     # modelRF = RandomForestModel.load(sc, "s3n://bigdatap2ploans/myRandomForestRegressionModel")
 
     st, en = 0, 6
@@ -82,7 +93,8 @@ def plot(sc, model):
     yarr = []
     sample = [8000, 8000, 6291.63, 36, 272.61, 4, 21000, 0, 11.43, 0, 2, 7, 0, 5142,
               46.3, 8, 1, 0, 0, 9088.73, 6975.8, 8000, 1088.73, 0, 0, 0, 0, 5547.71, 5979]
-    print sample
+
+    writeS3(LOGGER, sample)
     from random import randint
     # loan = [8000,16000,24000,40000,48000]
     # term = [12,24,36,48,60]
@@ -101,26 +113,32 @@ def plot(sc, model):
         yarr.append(model.predict(temp))
     # Generate Graph from xarr and yarr
     # print xarr,yarr
-    print income, yarr
+    writeS3(LOGGER, income)
+    writeS3(LOGGER, yarr)
 
 
 def main():
-    print 'Main'
+
     sc = SparkContext(appName="BigData")
+    log4jLogger = sc._jvm.org.apache.log4j
+    LOGGER = log4jLogger.LogManager.getLogger(__name__)
+
+    writeS3(LOGGER, 'Fetching Data')
     data = getRawData(sc)
 
-    print 'Split the data into training and test sets (.30 held out for testing)'
+    writeS3(LOGGER, 'Split the data into training and test sets (.30 held out for testing)')
     (trainingData, testData) = data.randomSplit([0.7, 0.3])
 
-    print 'training RF'
-    modelRF = trainModelRF(sc, trainingData, testData)
+    writeS3(LOGGER, 'training RF')
+    modelRF = trainModelRF(sc, trainingData, testData, LOGGER)
 
-    print 'training GBT'
-    modelGBT = trainModelGBT(sc, trainingData, testData)
+    writeS3(LOGGER, 'training GBT')
+    modelGBT = trainModelGBT(sc, trainingData, testData, LOGGER)
 
-    print 'Plot'
-    plot(sc, modelRF)
-    plot(sc, modelGBT)
+    writeS3(LOGGER, 'Plot')
+    plot(sc, modelRF, LOGGER)
+    plot(sc, modelGBT, LOGGER)
+    writeS3(LOGGER, 'Done')
 
 if __name__ == '__main__':
     main()
