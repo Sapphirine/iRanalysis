@@ -31,7 +31,7 @@ def writeS3(LOGGER, msg):
     print msg
 
 
-def getRawData(sc, file_name="s3n://bigdatap2ploans/augmented_file.csv"):
+def getRawData(sc, file_name="s3n://bigdatap2ploans/new_processed_file_2.csv"):
     data = sc.textFile(file_name).cache()
     # data = sc.textFile("data/augmented_file.csv")
     # data = sc.textFile("data/new_processed_file.csv")
@@ -59,7 +59,7 @@ def trainModelRF(sc, trainingData, testData, LOGGER, numT=500):
     writeS3(LOGGER, model.toDebugString())
 
     # Save and load model
-    model.save(sc, "s3n://bigdatap2ploans/model_2/rf")
+    model.save(sc, "s3n://bigdatap2ploans/model_3/rf")
     # model.save(sc, "model/rf")
     return model
 
@@ -79,7 +79,7 @@ def trainModelGBT(sc, trainingData, testData, LOGGER, itera=100):
     writeS3(LOGGER, model.toDebugString())
 
     # Save and load model
-    model.save(sc, "s3n://bigdatap2ploans/model_2/gbt")
+    model.save(sc, "s3n://bigdatap2ploans/model_3/gbt")
     # model.save(sc, "model/gbt")
     return model
 
