@@ -31,7 +31,7 @@ def writeS3(LOGGER, msg):
     print msg
 
 
-def getRawData(sc, file_name="s3n://bigdatap2ploans/new_processed_file_2.csv"):
+def getRawData(sc, file_name="s3n://bigdatap2ploans/new_processed_file.csv"):
     data = sc.textFile(file_name).cache()
     # data = sc.textFile("data/augmented_file.csv")
     # data = sc.textFile("data/new_processed_file.csv")
@@ -87,11 +87,12 @@ def trainModelGBT(sc, trainingData, testData, LOGGER, itera=100):
 def plot(sc, model, LOGGER):
     st, en = 0, 6
 
-    sample = [8000,8000,6291.63,36,272.61,4,21000,0,11.43,0,2,7,0,5142,46.3,8,1,0,0,9088.73,6975.8,8000,1088.73,0,0,0,0,5547.71,5979]
+    sample = [8000, 8000, 6291.63, 36, 272.61, 4, 21000, 0, 11.43, 0, 2, 7, 0, 5142,
+              46.3, 8, 1, 0, 0, 9088.73, 6975.8, 8000, 1088.73, 0, 0, 0, 0, 5547.71, 5979]
 
     writeS3(LOGGER, sample)
     loan = [8000, 16000, 24000, 40000, 48000, 100000]
-    term = [6,12, 24, 36, 48, 60]
+    term = [6, 12, 24, 36, 48, 60]
     grade = range(7)
     income = [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000]
 
@@ -140,12 +141,14 @@ def plot(sc, model, LOGGER):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Big Data')
-    parser.add_argument('--train', required=True, metavar='t', type=int, nargs=1, help='Train on provided file, must be a csv with header; 1: RF, 2:GBT; 3:Both')
+    parser.add_argument('--train', required=True, metavar='t', type=int, nargs=1,
+                        help='Train on provided file, must be a csv with header; 1: RF, 2:GBT; 3:Both')
     parser.add_argument('--plot', required=True, metavar='p', type=int, nargs=1, help='Generate prediction Data')
-    parser.add_argument('--file', metavar='f', type=str, nargs=1, help='Dataset File; can be S3, HDFS or Local File;Default: Sample file in S3')
+    parser.add_argument('--file', metavar='f', type=str, nargs=1,
+                        help='Dataset File; can be S3, HDFS or Local File;Default: Sample file in S3')
 
-    parser.add_argument('--numT',metavar='rft', type=int, nargs=1, help='Number of trees in RF; default=500')
-    parser.add_argument('--iter',metavar='gbi', type=int, nargs=1, help='Number of iterations in GBT; default=100')
+    parser.add_argument('--numT', metavar='rft', type=int, nargs=1, help='Number of trees in RF; default=500')
+    parser.add_argument('--iter', metavar='gbi', type=int, nargs=1, help='Number of iterations in GBT; default=100')
 
     args = parser.parse_args()
 
@@ -177,7 +180,6 @@ if __name__ == '__main__':
                 modelGBT = trainModelGBT(sc, trainingData, testData, LOGGER, args.iter[0])
             else:
                 modelGBT = trainModelGBT(sc, trainingData, testData, LOGGER)
-            
 
     if args.plot[0]:
         modelRF = RandomForestModel.load(sc, "s3n://bigdatap2ploans/model_2/rf")

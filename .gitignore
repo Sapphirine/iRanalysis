@@ -89,4 +89,6 @@ ENV/
 .ropeproject
 
 # User defined Folders
-tmpModel
+log_files/
+spark-warehouse/
+results/
